@@ -1,0 +1,27 @@
+---
+// Cartão de stack: ícone monocromático do simple-icons com o nome ao lado.
+// Sem ícone no pacote (Playwright), o espaço do ícone fica vazio e o nome alinha com os outros.
+import { iconeDe } from '../conteudo/icones'
+interface Props {
+  stack: string[]
+}
+const { stack } = Astro.props
+// Lista longa vira duas colunas no computador, para o cartão não ficar mais alto que o principal.
+const longa = stack.length > 5
+---
+<div class="cartao flex flex-col">
+  <p class="font-mono text-xs tracking-widest text-apagado uppercase">Stack</p>
+  <ul data-stack aria-label="Stack" class:list={['mt-4 grid gap-x-4 gap-y-2.5 text-sm text-suave print:mt-2 print:gap-y-1.5', longa && 'lg:grid-cols-2 print:grid-cols-2']}>
+    {stack.map((nome) => {
+      const icone = iconeDe(nome)
+      return (
+        <li class="flex items-center gap-3">
+          {icone
+            ? <svg class="size-5 shrink-0 fill-current text-texto/85" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={icone.path} /></svg>
+            : <span class="size-5 shrink-0" aria-hidden="true"></span>}
+          <span>{nome}</span>
+        </li>
+      )
+    })}
+  </ul>
+</div>

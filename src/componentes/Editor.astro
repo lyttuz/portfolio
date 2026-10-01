@@ -1,0 +1,104 @@
+---
+// Janela de editor da aba Estrutura. A árvore, o comando e a barra de status
+// vêm do conteúdo (`porDentro.editor`), e o caminho é montado a partir do nome
+// da raiz; nos projetos do escritório, a estrutura é ilustrativa. Nasce com
+// tudo aberto; o interacoes.ts fecha as pastas quando o JavaScript carrega.
+import type { NoArvore, Editor } from '../conteudo/tipos'
+interface Props {
+  id: string
+  arvore: NoArvore
+  editor: Editor
+}
+const { id, arvore, editor } = Astro.props
+const nome = arvore.nome.replace(/\/$/, '')
+const [cabeca, ...resto] = editor.comando.split(' ')
+const cauda = resto.length ? ` ${resto.join(' ')}` : ''
+// A seta da linha sem filhos fica invisível por classe, e não por style inline:
+// o beforeprint do movimento.ts limpa o visibility inline de tudo dentro do projeto.
+// Cada lista filha ganha um id para o aria-controls do botão da pasta.
+let contador = 0
+const proximoId = () => `${id}-pasta-${++contador}`
+const ehPasta = (n: NoArvore) => n.nome.endsWith('/')
+// Projeto do escritório mostra estrutura fictícia: a legenda diz isso acima da
+// janela, e a barra de status não leva o ícone de branch.
+const ilustrativo = editor.statusEsquerda.includes('estrutura ilustrativa')
+---
+{ilustrativo && <p data-legenda class="mb-3 text-xs text-suave">Estrutura ilustrativa, não é a pasta real.</p>}
+<div data-editor class="editor overflow-hidden rounded-[14px] border border-borda bg-editor font-mono text-sm shadow-[0_24px_60px_-24px_rgb(0_0_0/0.9)] print:shadow-none">
+  <div class="flex items-center gap-3 border-b border-borda px-4 py-3 print:py-2">
+    <span class="flex gap-2 print:hidden" aria-hidden="true">
+      <span class="size-3 rounded-full bg-borda-forte"></span><span class="size-3 rounded-full bg-borda-forte"></span><span class="size-3 rounded-full bg-borda-forte"></span>
+    </span>
+    <span class="text-xs text-suave">~/{nome}</span>
+  </div>
+  <div class="flex">
+    <div class="editor-lateral hidden w-12 shrink-0 flex-col items-center justify-between border-r border-borda py-4 text-apagado sm:flex print:hidden" aria-hidden="true">
+      <div class="flex flex-col items-center gap-5">
+        <svg class="size-[18px] text-texto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.3l2 2h8.7A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>
+        <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
+        <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-11 7.5"/></svg>
+        <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></svg>
+      </div>
+      <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>
+    </div>
+    <div class="min-w-0 flex-1">
+      <p class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-borda px-4 py-3 text-xs print:py-2">
+        <span class="font-semibold tracking-widest text-texto">EXPLORER</span>
+        <span class="text-apagado">~ / projetos / {nome}</span>
+      </p>
+      <ul class="arvore px-2 py-3 leading-6 sm:px-3 print:py-2 print:leading-5">
+        {(function linha(no: NoArvore) {
+          const pasta = ehPasta(no)
+          const alvo = no.filhos ? proximoId() : undefined
+          const conteudo = (
+            <>
+              <svg class:list={['seta mt-[0.45em] size-3 shrink-0 text-apagado transition-transform duration-150 group-aria-expanded/pasta:rotate-90', !no.filhos && 'invisible']} viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M4.2 2.5 8 6l-3.8 3.5z"/></svg>
+              {pasta ? (
+                <svg class="icone-pasta mt-[0.3em] size-4 shrink-0 text-pasta" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 4.2c0-.6.5-1 1-1h3.1l1.4 1.5h5.9c.6 0 1 .4 1 1v6.6c0 .6-.4 1-1 1H2.8c-.5 0-1-.4-1-1z"/></svg>
+              ) : (
+                <svg class="mt-[0.3em] size-4 shrink-0 text-apagado" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.8h5.2L12.5 5v8.2c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1V2.8c0-.6.4-1 1-1z"/><path d="M9 1.8V5h3.5"/></svg>
+              )}
+              <span class="min-w-0">
+                <span class:list={[pasta ? 'font-semibold text-texto' : 'text-suave']}>{no.nome}</span>
+                {no.nota && <span class="ml-2 text-apagado"><span aria-hidden="true">·</span>{no.nota}</span>}
+              </span>
+            </>
+          )
+          const classe = 'flex w-full items-start gap-2 rounded-md px-2 py-0.5 text-left'
+          return (
+            <li>
+              {no.filhos ? (
+                <button type="button" data-pasta data-linha aria-expanded="true" aria-controls={alvo} class={`${classe} group/pasta foco cursor-pointer transition-colors duration-150 hover:bg-superficie focus-visible:outline-offset-0`}>{conteudo}</button>
+              ) : (
+                <span data-linha class={classe}>{conteudo}</span>
+              )}
+              {no.filhos && (
+                <ul id={alvo} class="pl-5">
+                  {no.filhos.map((f) => linha(f))}
+                </ul>
+              )}
+            </li>
+          )
+        })(arvore)}
+      </ul>
+      <p class="flex items-center gap-2 border-t border-borda px-4 py-3 text-xs print:py-2">
+        <span class="text-texto" aria-hidden="true">›</span>
+        <span data-comando class="min-w-0 text-suave [overflow-wrap:anywhere]"><span class="font-semibold text-texto">{cabeca}</span>{cauda}</span>
+        <span class="cursor inline-block h-[1.15em] w-[0.6em] bg-texto/80 print:hidden" aria-hidden="true"></span>
+      </p>
+    </div>
+  </div>
+  <p data-status class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-borda px-4 py-2 text-xs text-apagado print:py-1.5">
+    <span class="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {editor.statusEsquerda.map((t, i) => (
+        <span class="inline-flex items-center gap-1.5">
+          {i === 0 && !ilustrativo && <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-11 7.5"/></svg>}
+          {t}
+        </span>
+      ))}
+    </span>
+    <span class="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {editor.statusDireita.map((t) => <span>{t}</span>)}
+    </span>
+  </p>
+</div>

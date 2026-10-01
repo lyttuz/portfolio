@@ -1,0 +1,44 @@
+---
+// "Por dentro" em abas. Sem JavaScript e no papel, os painéis ficam empilhados,
+// cada um com o seu título, e a lista de abas continua escondida (atributo
+// hidden). Os papéis de ARIA tabs (tablist, tab, tabpanel) e os atributos que
+// dependem deles não estão no HTML: sem script, isto é só uma sequência de
+// seções. O interacoes.ts aplica os papéis, tira o hidden da lista e passa a
+// esconder os painéis inativos.
+import type { Projeto } from '../conteudo/tipos'
+import Editor from './Editor.astro'
+interface Props {
+  projeto: Projeto
+}
+const { projeto: p } = Astro.props
+const abas = [
+  { chave: 'arquitetura', rotulo: 'Arquitetura' },
+  { chave: 'estrutura', rotulo: 'Estrutura' },
+]
+const idAba = (c: string) => `${p.id}-aba-${c}`
+const idPainel = (c: string) => `${p.id}-painel-${c}`
+const titulo = 'painel-titulo mb-4 font-mono text-xs tracking-widest text-apagado uppercase print:not-sr-only print:mb-2'
+---
+<div data-abas>
+  <p id={`${p.id}-por-dentro`} data-por-dentro class="font-mono text-sm text-suave">Por dentro</p>
+  <div data-lista-abas hidden class="mt-3 flex flex-wrap gap-1 border-b border-borda pb-3 print:hidden">
+    {abas.map((a) => (
+      <button
+        type="button" id={idAba(a.chave)} data-aba={a.chave}
+        class="foco cursor-pointer rounded-full border border-transparent px-3.5 py-1.5 font-mono text-sm text-apagado transition-[color,background-color,border-color] duration-150 select-none hover:text-texto aria-selected:border-borda aria-selected:bg-superficie-2 aria-selected:text-texto"
+      >{a.rotulo}</button>
+    ))}
+  </div>
+  <div class="mt-5 flex flex-col gap-8 print:mt-2 print:gap-4">
+    <section id={idPainel('arquitetura')} data-painel="arquitetura">
+      <h3 class={titulo}>Arquitetura</h3>
+      <ul class="space-y-2 leading-relaxed text-suave print:space-y-1">
+        {p.porDentro.pontos.map((t) => <li class="flex gap-3"><span class="text-apagado" aria-hidden="true">·</span><span>{t}</span></li>)}
+      </ul>
+    </section>
+    <section id={idPainel('estrutura')} data-painel="estrutura">
+      <h3 class={titulo}>Estrutura</h3>
+      <Editor id={p.id} arvore={p.porDentro.arvore} editor={p.porDentro.editor} />
+    </section>
+  </div>
+</div>

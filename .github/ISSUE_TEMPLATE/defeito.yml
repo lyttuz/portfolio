@@ -1,0 +1,24 @@
+name: Defeito
+description: Algo que deveria funcionar e não funciona.
+title: "Defeito: "
+labels: ["defeito"]
+body:
+  - type: textarea
+    id: o-que-aconteceu
+    attributes:
+      label: O que aconteceu
+    validations:
+      required: true
+  - type: textarea
+    id: o-que-era-esperado
+    attributes:
+      label: O que era esperado
+    validations:
+      required: true
+  - type: textarea
+    id: como-reproduzir
+    attributes:
+      label: Como reproduzir
+      description: Passo a passo, do começo, para quem for conferir.
+    validations:
+      required: true

@@ -1,0 +1,75 @@
+---
+import '@fontsource-variable/inter'
+import '@fontsource-variable/jetbrains-mono'
+import '../estilos/global.css'
+import Fundo from '../componentes/Fundo.astro'
+import { montarCsp } from '../seguranca/csp'
+interface Props {
+  titulo: string
+  descricao: string
+}
+const { titulo, descricao } = Astro.props
+// A CSP sai do build: com PUBLIC_SENTRY_DSN, connect-src ganha a origem de
+// ingestão do Sentry; sem ela, só o próprio site. A <meta> fica logo depois
+// do charset, antes de qualquer script ou folha de estilo, porque o navegador
+// só aplica a política ao que vem depois dela.
+const csp = montarCsp(import.meta.env.PUBLIC_SENTRY_DSN)
+// Comentário aqui no frontmatter, e não em HTML, para não ir publicado.
+// O link de ícone vazio existe porque ainda não há favicon de verdade: ele só
+// evita que o navegador peça /favicon.ico sozinho (fora do /portfolio/, então
+// sempre 404) e suje o console com erro de rede à toa.
+---
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={descricao} />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>{titulo}</title>
+  </head>
+  <body class="text-texto min-h-dvh">
+    <Fundo />
+    <slot />
+    <script>
+      // Carregamento leve: o HTML já nasce correto (visível, painéis empilhados,
+      // pastas abertas), então nada aqui precisa rodar cedo. GSAP e as interações
+      // só chegam depois do DOMContentLoaded, por import() dinâmico, e saem do
+      // script inicial do documento. Se o beforeprint disparar antes disso (ver
+      // testes/e2e/impressao.spec.ts), o estado de origem já imprime certo.
+      // Com movimento reduzido, o chunk do movimento (GSAP) nem é pedido: não
+      // haveria animação para ele fazer. As interações chegam do mesmo jeito.
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          import('../scripts/interacoes').then(({ iniciarInteracoes }) => iniciarInteracoes())
+          return
+        }
+        Promise.all([import('../scripts/movimento'), import('../scripts/interacoes')]).then(([{ iniciarMovimento }, { iniciarInteracoes }]) => {
+          // O movimento vem antes: os ouvintes dele precisam existir quando as abas avisarem.
+          iniciarMovimento()
+          iniciarInteracoes()
+        })
+      })
+
+      // Sentry só entra se houver DSN, e só depois que a página terminou de
+      // carregar, na ociosidade: erro técnico não é prioridade de primeira pintura.
+      // O fundo em movimento é decoração: entra depois do load, na ociosidade, e
+      // até lá fica a malha parada em CSS. O teto de espera garante que ele
+      // ligue mesmo numa página que nunca fica ociosa.
+      window.addEventListener('load', () => {
+        const ligar = () => import('../scripts/fundo').then((m) => m.iniciarFundo())
+        if ('requestIdleCallback' in window) requestIdleCallback(ligar, { timeout: 1_500 })
+        else setTimeout(ligar, 200)
+      })
+
+      window.addEventListener('load', () => {
+        if (!import.meta.env.PUBLIC_SENTRY_DSN) return
+        const carregar = () => import('../scripts/observabilidade').then((m) => m.iniciarObservabilidade())
+        if ('requestIdleCallback' in window) requestIdleCallback(carregar)
+        else carregar()
+      })
+    </script>
+  </body>
+</html>

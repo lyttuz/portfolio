@@ -1,0 +1,29 @@
+name: pr-com-issue
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const corpo = context.payload.pull_request.body || ''
+            const padrao = /\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#\d+/i
+            if (!padrao.test(corpo)) {
+              core.setFailed(
+                'O corpo do PR precisa citar a issue que ele fecha, no formato "Closes #12" ' +
+                '(ou close, closed, fix, fixes, fixed, resolve, resolves, resolved, em qualquer ' +
+                'maiúscula ou minúscula). Edite a descrição do PR e adicione essa linha.'
+              )
+            }

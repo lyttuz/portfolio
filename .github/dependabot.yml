@@ -1,0 +1,24 @@
+# Atualizações automáticas, uma vez por semana. As menores e de correção vêm
+# agrupadas num PR só, por ecossistema; as maiores chegam uma a uma, porque
+# podem quebrar. No github-actions, o Dependabot atualiza o SHA fixado e o
+# comentário com a tag juntos.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      menores:
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      menores:
+        update-types:
+          - minor
+          - patch

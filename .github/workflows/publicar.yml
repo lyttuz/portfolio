@@ -1,0 +1,108 @@
+name: publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Uma publicação em andamento termina antes da próxima começar: cancelar no
+# meio pode deixar o Pages com metade do envio.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # O montar faz toda a verificação sem PUBLIC_SENTRY_DSN, igual ao
+  # qualidade.yml, para os testes do caminho "Sentry desligado" valerem. Só no
+  # fim o site é montado de novo com a DSN, ganha o PDF e passa pelo teste do
+  # build e pelo secretlint; é esse resultado que vai como artefato do Pages.
+  # A lista da trava não entra aqui: o montar roda código de node_modules.
+  montar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run auditoria
+      - run: npx playwright install --with-deps chromium
+      - run: npm run segredos:repo
+      - run: npm run lint
+      - run: npm run tipos
+      - run: npm run teste:cobertura
+      - run: npm run build
+      - run: npm run pdf -- --exportar-texto saida/pdf-texto.txt
+      - run: npm run build:sentry-teste
+      - run: npm run teste:build
+      - run: npm run e2e
+      - run: npm run build
+        env:
+          PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
+      - run: npm run pdf -- --exportar-texto saida/pdf-texto.txt
+      - run: npm run teste:build
+        env:
+          PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
+      - run: npm run segredos:dist
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pdf-texto
+          path: saida/pdf-texto.txt
+          retention-days: 1
+
+  # O único job com a lista, sem npm ci. Confere o repositório, o artefato
+  # exato que vai ao Pages (o tar do upload-pages-artifact, aberto em dist/)
+  # e o texto do PDF final.
+  trava:
+    needs: montar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      # O repositório é conferido antes de qualquer artefato chegar; os
+      # artefatos ficam fora do checkout, em $RUNNER_TEMP.
+      - run: node scripts/trava.mjs repo
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/trava/pages
+      - run: mkdir -p "$RUNNER_TEMP/trava/dist" && tar -xf "$RUNNER_TEMP/trava/pages/artifact.tar" -C "$RUNNER_TEMP/trava/dist"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pdf-texto
+          path: ${{ runner.temp }}/trava
+      - run: node scripts/trava.mjs dist "$RUNNER_TEMP/trava/dist"
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}
+      - run: node scripts/trava.mjs texto "$RUNNER_TEMP/trava/pdf-texto.txt"
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}
+
+  publicar:
+    needs: [montar, trava]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

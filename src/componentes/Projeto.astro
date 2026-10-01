@@ -1,0 +1,47 @@
+---
+// Projeto em grade de cartões (bento). De md para cima e no papel, seis colunas:
+// principal (4) e stack (2), depois os destaques dividindo a linha, e o
+// "Por dentro" inteiro. No celular, uma coluna.
+import type { Projeto } from '../conteudo/tipos'
+import Abas from './Abas.astro'
+import Stack from './Stack.astro'
+interface Props {
+  projeto: Projeto
+  numero: number
+}
+const { projeto: p, numero } = Astro.props
+// Três destaques dividem a linha em três; dois, em duas metades.
+const larguraDestaque = p.destaques.length === 2 ? 'largo:col-span-3' : 'largo:col-span-2'
+---
+<article id={p.id} data-projeto={p.id} data-anima="entrada" class="projeto scroll-mt-20 border-t border-borda py-16 sm:py-20 print:py-6">
+  <div class="grid grid-cols-1 gap-4 largo:grid-cols-6 print:gap-3">
+    <div class="cartao cartao-principal largo:col-span-4">
+      <p class="font-mono text-xs text-apagado">{String(numero).padStart(2, '0')} · {p.subtitulo}</p>
+      <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{p.titulo}</h2>
+        {p.estado && (
+          <span data-estado class="inline-flex items-center gap-1.5 rounded-full border border-borda-forte px-2.5 py-1 font-mono text-xs text-suave">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span>
+            {p.estado}
+          </span>
+        )}
+      </div>
+      <div class="mt-5 max-w-[65ch] print:mt-3">
+        <p class="font-mono text-xs tracking-widest text-apagado uppercase">O problema</p>
+        <p class="mt-2 leading-relaxed text-suave text-pretty">{p.dor}</p>
+      </div>
+      <div class="mt-5 max-w-[65ch] print:mt-3">
+        <p class="font-mono text-xs tracking-widest text-apagado uppercase">O que resolve</p>
+        <p class="mt-2 text-lg leading-relaxed text-texto text-pretty">{p.oQueFaz}</p>
+      </div>
+    </div>
+    <div class="grid min-w-0 largo:col-span-2"><Stack stack={p.porDentro.stack} /></div>
+    {p.destaques.map((d) => (
+      <dl class={`cartao ${larguraDestaque}`}>
+        <dt class="font-mono text-xs tracking-widest text-apagado uppercase">{d.rotulo}</dt>
+        <dd class="mt-2 leading-relaxed text-suave text-pretty">{d.texto}</dd>
+      </dl>
+    ))}
+    <div class="cartao cartao-dentro min-w-0 largo:col-span-6"><Abas projeto={p} /></div>
+  </div>
+</article>

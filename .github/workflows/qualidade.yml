@@ -1,0 +1,189 @@
+name: qualidade
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# npm ci roda com --ignore-scripts: nenhum pacote executa código na
+# instalação. O único script de instalação da árvore que roda no Linux é o
+# do esbuild, que só otimiza o binário já trazido pelo pacote da plataforma.
+#
+# BLOQUEIO (a lista da trava) só existe no job trava, que não instala
+# dependência nenhuma: build, testes e PDF rodam código de node_modules, e
+# esse código não pode estar no mesmo job que a lista. O job e2e entrega ao
+# trava o site montado e o texto do PDF como artefatos.
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+
+  tipos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run tipos
+
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Reprova o PR com vulnerabilidade alta ou crítica em dependência que
+      # vai para o navegador. As de desenvolvimento ficam de fora: não
+      # chegam ao site publicado.
+      - run: npm run auditoria
+      - run: npm run teste:cobertura
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # PR do Dependabot não recebe o token: sem ele, o envio pode
+          # falhar sem reprovar o PR. Com o token, falha de envio reprova.
+          fail_ci_if_error: ${{ secrets.CODECOV_TOKEN != '' }}
+
+  mutacao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run mutacao
+
+  e2e:
+    runs-on: ubuntu-latest
+    # Sem PUBLIC_SENTRY_DSN neste job, de propósito: o "npm run build" daqui
+    # tem que sair sem DSN, para os testes do caminho "Sentry desligado"
+    # continuarem valendo. A build com DSN deste job é só a de teste
+    # (build:sentry-teste), que já define a própria DSN falsa.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      # Sem a lista: o texto do PDF vai para o job trava conferir.
+      - run: npm run pdf -- --exportar-texto saida/pdf-texto.txt
+      - run: npm run build:sentry-teste
+      - run: npm run teste:build
+      - run: npm run e2e
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pdf-texto
+          path: saida/pdf-texto.txt
+          retention-days: 1
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # A DSN entra só neste build, para o Lighthouse medir o site como ele é publicado.
+      - run: npm run build
+        env:
+          PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
+      - run: npm run lighthouse
+
+  # Varredura de segredos com o secretlint: nos arquivos do repositório e no
+  # site montado, que é o que vai ao público.
+  segredos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run segredos:repo
+      - run: npm run build
+      - run: npm run segredos:dist
+
+  # O único job com a lista. Sem npm ci: só o Node e o código da trava, que
+  # importa só módulos do Node (testes/unidade/trava-cli.test.mjs). PR do
+  # Dependabot não recebe segredo comum, e a lista nunca entra nos segredos
+  # do Dependabot: nesse PR o job fica de fora, e o publicar confere de novo
+  # depois do merge, antes de publicar.
+  trava:
+    needs: e2e
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      # O repositório é conferido antes de qualquer artefato chegar; os
+      # artefatos ficam fora do checkout, em $RUNNER_TEMP.
+      - run: node scripts/trava.mjs repo
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: ${{ runner.temp }}/trava/dist
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pdf-texto
+          path: ${{ runner.temp }}/trava
+      - run: node scripts/trava.mjs dist "$RUNNER_TEMP/trava/dist"
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}
+      - run: node scripts/trava.mjs texto "$RUNNER_TEMP/trava/pdf-texto.txt"
+        env:
+          BLOQUEIO: ${{ secrets.BLOQUEIO }}

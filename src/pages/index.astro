@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro'
+import Cabecalho from '../componentes/Cabecalho.astro'
+import Sobre from '../componentes/Sobre.astro'
+import Projeto from '../componentes/Projeto.astro'
+import Navegacao from '../componentes/Navegacao.astro'
+import ComoTrabalho from '../componentes/ComoTrabalho.astro'
+import Rodape from '../componentes/Rodape.astro'
+import { perfil } from '../conteudo/perfil'
+import { projetos } from '../conteudo/projetos'
+---
+<Base titulo={`${perfil.nome} · ${perfil.titulo}`} descricao={perfil.sobre}>
+  <Navegacao />
+  <main class="mx-auto max-w-5xl px-4 sm:px-6">
+    <Cabecalho />
+    <Sobre />
+    {projetos.map((p, i) => <Projeto projeto={p} numero={i + 1} />)}
+    <ComoTrabalho />
+    <Rodape />
+  </main>
+</Base>

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-sentry-teste/
+saida/
+.astro/
+test-results/
+playwright-report/
+bloqueio.local.txt
+*.local.*
+.superpowers/
+.stryker-tmp/
+.lighthouseci/
+docs-internos/
+.claude/

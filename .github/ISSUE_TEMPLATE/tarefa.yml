@@ -1,0 +1,29 @@
+name: Tarefa
+description: Trabalho planejado, a partir do plano de construção ou de uma melhoria combinada.
+title: "Tarefa: "
+labels: ["tarefa"]
+body:
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Objetivo
+      description: O que esta tarefa entrega, em uma ou duas frases.
+    validations:
+      required: true
+  - type: textarea
+    id: criterio-de-aceite
+    attributes:
+      label: Critério de aceite
+      description: Como confirmar que a tarefa está pronta.
+    validations:
+      required: true
+  - type: dropdown
+    id: muda-arquitetura
+    attributes:
+      label: Muda arquitetura?
+      description: Se sim, o PR que fecha esta tarefa precisa criar ou atualizar um ADR em docs/adr/.
+      options:
+        - "Sim"
+        - "Não"
+    validations:
+      required: true

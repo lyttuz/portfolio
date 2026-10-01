@@ -1,0 +1,3 @@
+#!/bin/sh
+# Antes de enviar, confere o repositório inteiro contra a lista de bloqueio.
+exec node scripts/trava.mjs repo

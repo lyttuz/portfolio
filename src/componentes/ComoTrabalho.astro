@@ -1,0 +1,61 @@
+---
+// Linha do tempo "Como trabalho". O HTML nasce na versão estática: em linha no
+// computador e no papel, e na vertical no celular, com a linha à esquerda,
+// desenhada pelo CSS (.etapas em global.css). Com movimento, o movimento.ts
+// marca a seção com data-trilha, e o CSS passa a montar a trilha horizontal
+// presa na tela (etapas alternadas acima e abaixo da linha, ver trilha.ts).
+// O terminal ao lado é ilustração do processo, com linhas fixas, e por isso
+// fica fora da árvore de acessibilidade e fora do papel. A entrada suave
+// (data-anima) fica no título, e não na seção: a seção é o elemento preso, e
+// um deslocamento nela durante a medição tiraria o pin do lugar.
+import { perfil } from '../conteudo/perfil'
+const linhasDoTerminal = [
+  { comando: 'mapear', resto: ' rotina', fim: '' },
+  { comando: 'especificar', resto: '', fim: '' },
+  { comando: 'construir', resto: '', fim: '' },
+  { comando: 'testar', resto: '', fim: '✓' },
+  { comando: 'documentar', resto: '', fim: '' },
+]
+---
+<section id="como-trabalho" class="scroll-mt-20 border-t border-borda py-16 sm:py-20 print:py-6">
+  <h2 data-anima="entrada" class="text-3xl font-semibold tracking-tight sm:text-4xl">Como trabalho</h2>
+  <div class="trilha-corpo">
+    <div class="trilha-janela" data-trilha-janela>
+      <div class="trilha-faixa" data-trilha-faixa>
+        <ol class="etapas mt-10 grid grid-cols-1 gap-8 largo:grid-cols-5 largo:gap-6 print:mt-5">
+          {perfil.etapas.map((e, i) => (
+            <li class="etapa relative pl-9 largo:pt-9 largo:pl-0">
+              <span class="marco" aria-hidden="true"></span>
+              <div class="etapa-corpo">
+                <p class="etapa-numero font-mono text-xs text-apagado">{String(i + 1).padStart(2, '0')}</p>
+                <h3 class="etapa-titulo mt-1.5 text-lg font-semibold tracking-tight">{e.titulo}</h3>
+                <p class="etapa-texto mt-1 text-sm leading-relaxed text-suave text-pretty">{e.texto}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+    <div data-terminal class="terminal so-tela mt-12 max-w-sm overflow-hidden rounded-[14px] border border-borda bg-editor font-mono text-xs shadow-[0_24px_60px_-24px_rgb(0_0_0/0.9)]" aria-hidden="true">
+      <div class="flex items-center gap-3 border-b border-borda px-4 py-2.5">
+        <span class="flex gap-2">
+          <span class="size-2.5 rounded-full bg-borda-forte"></span><span class="size-2.5 rounded-full bg-borda-forte"></span><span class="size-2.5 rounded-full bg-borda-forte"></span>
+        </span>
+        <span class="text-apagado">~/processo</span>
+      </div>
+      <div class="px-2 py-3 leading-6">
+        {linhasDoTerminal.map((l) => (
+          <p class="terminal-linha flex items-center gap-2 rounded-md px-2">
+            <span class="text-apagado">$</span>
+            <span class="terminal-comando"><span class="terminal-cabeca">{l.comando}</span>{l.resto}</span>
+            {l.fim && <span class="terminal-fim ml-auto">{l.fim}</span>}
+          </p>
+        ))}
+        <p class="flex items-center gap-2 px-2">
+          <span class="text-apagado">$</span>
+          <span class="cursor inline-block h-[1.1em] w-[0.55em] bg-texto/70"></span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+---
+import { perfil } from '../conteudo/perfil'
+const link = 'foco rounded-sm underline decoration-borda-forte underline-offset-4 transition-[color,background-color,border-color,text-decoration-color] duration-150 hover:text-texto hover:decoration-texto'
+// O aviso só aparece quando o Sentry está ligado de verdade: sem DSN, a página
+// não carrega o SDK (ver src/scripts/observabilidade.ts), e o aviso mentiria.
+const sentryLigado = Boolean(import.meta.env.PUBLIC_SENTRY_DSN)
+---
+<footer data-anima="entrada" class="border-t border-borda pt-16 pb-24 print:pt-6 print:pb-0">
+  <h2 class="text-2xl font-semibold tracking-tight text-balance">Tem uma tarefa que toma horas da sua equipe toda semana?</h2>
+  <p class="mt-3 text-suave">
+    Me conta qual. Respondo por <a class={link} href={`mailto:${perfil.email}`}>e-mail</a> ou pelo <a class={link} href={perfil.linkedin} rel="noopener noreferrer">LinkedIn</a>.
+  </p>
+  {sentryLigado && <p class="mt-8 text-xs text-apagado">Este site registra erros técnicos de JavaScript para correção, sem dados pessoais.</p>}
+</footer>

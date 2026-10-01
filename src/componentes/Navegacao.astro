@@ -1,0 +1,23 @@
+---
+// Barra fixa do topo, só na tela. No celular ficam o nome e o "Contato"; as
+// âncoras do meio aparecem de md para cima.
+import { perfil } from '../conteudo/perfil'
+const ancoras = [
+  { href: '#escritorio', rotulo: 'Escritório Virtual' },
+  { href: '#protocolador', rotulo: 'Protocolador' },
+  { href: '#noticias', rotulo: 'Notícias' },
+  { href: '#como-trabalho', rotulo: 'Como trabalho' },
+]
+const transicao = 'transition-[color,background-color,border-color] duration-150'
+---
+<nav data-nav aria-label="Principal" class="so-tela fixed inset-x-0 top-0 z-10 border-b border-borda bg-[rgb(0_0_0/0.6)] backdrop-blur-md print:hidden">
+  <div class="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
+    <a href="#topo" class={`foco rounded-sm text-sm font-semibold tracking-tight ${transicao} hover:text-suave`}>{perfil.nome}</a>
+    <ul class="hidden items-center gap-1 text-sm md:flex">
+      {ancoras.map((a) => (
+        <li><a href={a.href} class={`foco rounded-full px-3 py-1.5 text-suave ${transicao} hover:bg-superficie-2 hover:text-texto`}>{a.rotulo}</a></li>
+      ))}
+    </ul>
+    <a href={`mailto:${perfil.email}`} class={`foco rounded-full border border-borda-forte px-4 py-1.5 text-sm ${transicao} hover:bg-texto hover:text-fundo`}>Contato</a>
+  </div>
+</nav>

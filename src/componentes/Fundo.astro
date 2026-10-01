@@ -1,0 +1,13 @@
+---
+// Comentário no frontmatter, e não em HTML, para não ir publicado.
+// .fundo-reserva é a malha estática em CSS: é o que aparece sem JavaScript.
+// Quando o canvas começa a desenhar, o script marca html[data-fundo-ativo] e
+// ela sai.
+---
+<div class="fundo" aria-hidden="true">
+  <div class="fundo-luz fundo-luz-1"></div>
+  <div class="fundo-luz fundo-luz-2"></div>
+  <div class="fundo-luz fundo-luz-3"></div>
+  <div class="fundo-reserva" data-fundo-reserva></div>
+  <canvas class="fundo-canvas" data-fundo aria-hidden="true"></canvas>
+</div>
