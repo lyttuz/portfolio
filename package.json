@@ -41,7 +41,7 @@
     "@astrojs/check": "^0.9.10",
     "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.5.14",
-    "@lhci/cli": "^0.15.1",
+    "@lhci/cli": "^0.16.0",
     "@playwright/test": "^1.63.0",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.6",
     "@stryker-mutator/core": "^10.0.0",
